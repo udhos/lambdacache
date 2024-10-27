@@ -9,7 +9,6 @@
 # Usage
 
 ```golang
-
 // 1. import the package
 import "github.com/udhos/lambdacache/lambdacache"
 
@@ -17,25 +16,25 @@ import "github.com/udhos/lambdacache/lambdacache"
 var cache = newCache()
 
 func newCache() *lambdacache.Cache {
-	options := lambdacache.Options{
-		Debug:    true,
-		Retrieve: getInfo,
-	}
-	return lambdacache.New(options)
+    options := lambdacache.Options{
+        Debug:    true,
+        Retrieve: getInfo,
+    }
+    return lambdacache.New(options)
 }
 
 // 3. in lambda function HANDLER context: query cache
 func HandleRequest(ctx context.Context) error {
-	// ...
+    // ...
     value, errGet := cache.Get(key)
     // ...
-	return nil
+    return nil
 }
 
 // getInfo retrieves key value when there is a cache miss
 func getInfo(key string) (interface{}, time.Duration, error) {
     const ttl = 5 * time.Minute // per-key TTL
-	return "put-retrieved-value-here", ttl, nil
+    return "put-retrieved-value-here", ttl, nil
 }
 ```
 
