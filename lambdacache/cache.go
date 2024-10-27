@@ -66,12 +66,12 @@ func New(options Options) *Cache {
 // Get gets value for key from cache.
 func (c *Cache) Get(key string) (interface{}, error) {
 
-	now := c.options.Time.Now()
+	begin := c.options.Time.Now()
 
 	if c.options.CleanupInterval > 0 && c.options.Time.Since(c.lastCleanup) > c.options.CleanupInterval {
 		size := len(c.cache)
 		for k, e := range c.cache {
-			if !e.isAlive(now) {
+			if !e.isAlive(begin) {
 				delete(c.cache, k)
 			}
 		}
@@ -80,14 +80,14 @@ func (c *Cache) Get(key string) (interface{}, error) {
 		deleted := size - remain
 		if c.options.Debug {
 			slog.Debug("lambdacache.Cache.Get: cleanup",
-				"elapsed", c.options.Time.Since(now),
+				"elapsed", c.options.Time.Since(begin),
 				"scanned", size,
 				"deleted", deleted,
 				"remain", remain,
 			)
 		}
 
-		c.lastCleanup = now
+		c.lastCleanup = begin
 	}
 
 	e, found := c.cache[key]
