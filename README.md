@@ -14,14 +14,23 @@
 import "github.com/udhos/lambdacache/lambdacache"
 
 // 2. in lambda function GLOBAL context: create cache
-options := lambdacache.Options{
-    Debug:    true,
-    Retrieve: getInfo, // cache filling function
+var cache = newCache()
+
+func newCache() *lambdacache.Cache {
+	options := lambdacache.Options{
+		Debug:    true,
+		Retrieve: getInfo,
+	}
+	return lambdacache.New(options)
 }
-cache := lambdacache.New(options)
 
 // 3. in lambda function HANDLER context: query cache
-value, errGet := cache.Get(key)
+func HandleRequest(ctx context.Context) error {
+	// ...
+    value, errGet := cache.Get(key)
+    // ...
+	return nil
+}
 
 // getInfo retrieves key value when there is a cache miss
 func getInfo(key string) (interface{}, time.Duration, error) {
