@@ -6,6 +6,14 @@
 
 [lambdacache](https://github.com/udhos/lambdacache) is a Go package for caching data in your AWS Lambda function between sequential invocations. It stores data in the memory of the function [execution context](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html) that usually spans multiple consecutive invocations.
 
+# Benefits
+
+- Lower load on backend services.
+- Lower lambda execution time (thus lower lambda costs).
+- Independent of any external cache service (e.g. redis).
+- Higher robustness.
+- Higher scalability.
+
 # Usage
 
 ```golang
