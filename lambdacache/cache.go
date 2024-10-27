@@ -69,6 +69,9 @@ func (c *Cache) Get(key string) (interface{}, error) {
 	begin := c.options.Time.Now()
 
 	if c.options.CleanupInterval > 0 && c.options.Time.Since(c.lastCleanup) > c.options.CleanupInterval {
+		//
+		// clean-up expired keys
+		//
 		size := len(c.cache)
 		for k, e := range c.cache {
 			if !e.isAlive(begin) {
@@ -90,6 +93,10 @@ func (c *Cache) Get(key string) (interface{}, error) {
 		c.lastCleanup = begin
 	}
 
+	//
+	// query cache
+	//
+
 	e, found := c.cache[key]
 	if found {
 		if e.isAlive(c.options.Time.Now()) {
@@ -98,10 +105,18 @@ func (c *Cache) Get(key string) (interface{}, error) {
 		delete(c.cache, key)
 	}
 
+	//
+	// key not found in cache, retrieve new key value
+	//
+
 	v, ttl, errRetrieve := c.options.Retrieve(key)
 	if errRetrieve != nil {
 		return "", errRetrieve
 	}
+
+	//
+	// save retrieved key into cache
+	//
 
 	e = entry{
 		value:    v,
