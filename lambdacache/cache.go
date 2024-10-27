@@ -15,6 +15,7 @@ type Options struct {
 	// retrieval.
 	Retrieve func(key string) (interface{}, time.Duration, error)
 
+	// CleanupInterval sets interval for periodic cache clean-up.
 	// If unset, defaults to 5 minutes.
 	// Set to negative value (ie -1) to disable clean-up.
 	CleanupInterval time.Duration
