@@ -13,7 +13,7 @@ type Options struct {
 	// Value is value for the key, TTL is how long the key should be kept in
 	// cache, and error is used to signal any error that prevented key
 	// retrieval.
-	Retrieve func(key string) (string, time.Duration, error)
+	Retrieve func(key string) (interface{}, time.Duration, error)
 
 	// If unset, defaults to 5 minutes.
 	// Set to negative value (ie -1) to disable clean-up.
@@ -35,7 +35,7 @@ type Cache struct {
 
 type entry struct {
 	deadline time.Time
-	value    string
+	value    interface{}
 }
 
 func (e entry) isAlive(now time.Time) bool {
@@ -64,7 +64,7 @@ func New(options Options) *Cache {
 }
 
 // Get gets value for key from cache.
-func (c *Cache) Get(key string) (string, error) {
+func (c *Cache) Get(key string) (interface{}, error) {
 
 	now := c.options.Time.Now()
 

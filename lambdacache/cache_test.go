@@ -3,6 +3,7 @@ package lambdacache
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ func TestCache(t *testing.T) {
 	var counter int
 	var cacheMisses int
 
-	retrieve := func(key string) (string, time.Duration, error) {
+	retrieve := func(key string) (interface{}, time.Duration, error) {
 		cacheMisses++
 		time.Sleep(100 * time.Millisecond) // adds fake latency
 		value := fmt.Sprintf("%s.%d", key, counter)
@@ -134,7 +135,7 @@ func TestCache(t *testing.T) {
 
 func TestCacheError(t *testing.T) {
 
-	retrieve := func(_ string) (string, time.Duration, error) {
+	retrieve := func(_ string) (interface{}, time.Duration, error) {
 		return "", 0, errors.New("retrieve error")
 	}
 
@@ -149,6 +150,60 @@ func TestCacheError(t *testing.T) {
 	_, errGet1 := cache.Get(key1)
 	if errGet1 == nil {
 		t.Errorf("expecting retrieve error but got success")
+	}
+}
+
+func TestCacheInt(t *testing.T) {
+
+	const ttl = 2 * time.Second // per-key ttl
+
+	retrieve := func(key string) (interface{}, time.Duration, error) {
+		value, err := strconv.Atoi(key)
+		return 10 * value, ttl, err
+	}
+
+	options := Options{
+		Retrieve: retrieve,
+	}
+
+	cache := New(options)
+
+	key1 := "2"
+
+	value, errGet1 := cache.Get(key1)
+	if errGet1 != nil {
+		t.Errorf("key1 get error: %v", errGet1)
+	}
+
+	if value != 20 {
+		t.Errorf("expecting key1 value=20, but got %d", value)
+	}
+}
+
+func TestCacheIntError(t *testing.T) {
+
+	const ttl = 2 * time.Second // per-key ttl
+
+	retrieve := func(key string) (interface{}, time.Duration, error) {
+		value, err := strconv.Atoi(key)
+		return 10 * value, ttl, err
+	}
+
+	options := Options{
+		Retrieve: retrieve,
+	}
+
+	cache := New(options)
+
+	key1 := "2"
+
+	value, errGet1 := cache.Get(key1)
+	if errGet1 != nil {
+		t.Errorf("key1 get error: %v", errGet1)
+	}
+
+	if value == "20" {
+		t.Errorf("expecting int, but got string")
 	}
 }
 
