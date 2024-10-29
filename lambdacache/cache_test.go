@@ -38,13 +38,17 @@ func TestCache(t *testing.T) {
 	// First query for key1
 	//
 
-	value1, errGet1 := cache.Get(key1)
+	value1, cacheHit, errGet1 := cache.Get(key1)
 	if errGet1 != nil {
 		t.Errorf("key1 get error: %v", errGet1)
 	}
 
 	if value1 != "key1.0" {
 		t.Errorf("key1 value error: %s", value1)
+	}
+
+	if cacheHit {
+		t.Errorf("unexpected cache hit for key1 1st query")
 	}
 
 	if cacheMisses != 1 {
@@ -63,13 +67,17 @@ func TestCache(t *testing.T) {
 	// counter is increased to 1, but value from cache should still be key1.0
 	counter++
 
-	value1, errGet1 = cache.Get(key1)
+	value1, cacheHit, errGet1 = cache.Get(key1)
 	if errGet1 != nil {
 		t.Errorf("key1 get error: %v", errGet1)
 	}
 
 	if value1 != "key1.0" {
 		t.Errorf("key1 value error: %s", value1)
+	}
+
+	if !cacheHit {
+		t.Errorf("unexpected cache miss for key1 2nd query")
 	}
 
 	if cacheMisses != 1 {
@@ -90,13 +98,17 @@ func TestCache(t *testing.T) {
 	// advance time to force cache miss
 	clock.SetNow(clock.now.Add(ttl))
 
-	value1, errGet1 = cache.Get(key1)
+	value1, cacheHit, errGet1 = cache.Get(key1)
 	if errGet1 != nil {
 		t.Errorf("key1 get error: %v", errGet1)
 	}
 
 	if value1 != "key1.1" {
 		t.Errorf("key1 value error: %s", value1)
+	}
+
+	if cacheHit {
+		t.Errorf("unexpected cache hit for key1 3rd query")
 	}
 
 	if cacheMisses != 2 {
@@ -114,13 +126,17 @@ func TestCache(t *testing.T) {
 	// First query for key2
 	//
 
-	value2, errGet2 := cache.Get(key2)
+	value2, cacheHit2, errGet2 := cache.Get(key2)
 	if errGet2 != nil {
 		t.Errorf("key2 get error: %v", errGet2)
 	}
 
 	if value2 != "key2.1" {
 		t.Errorf("key2 value error: %s", value2)
+	}
+
+	if cacheHit2 {
+		t.Errorf("unexpected cache hit for key2 1st query")
 	}
 
 	if cacheMisses != 3 {
@@ -136,7 +152,7 @@ func TestCache(t *testing.T) {
 func TestCacheError(t *testing.T) {
 
 	retrieve := func(_ string) (interface{}, time.Duration, error) {
-		return "", 0, errors.New("retrieve error")
+		return 42, 0, errors.New("retrieve error")
 	}
 
 	options := Options{
@@ -147,9 +163,15 @@ func TestCacheError(t *testing.T) {
 
 	key1 := "key1"
 
-	_, errGet1 := cache.Get(key1)
+	value1, _, errGet1 := cache.Get(key1)
 	if errGet1 == nil {
 		t.Errorf("expecting retrieve error but got success")
+	}
+
+	v := value1.(int)
+
+	if v != 42 {
+		t.Errorf("expecting 42, got %d", v)
 	}
 }
 
@@ -170,7 +192,7 @@ func TestCacheInt(t *testing.T) {
 
 	key1 := "2"
 
-	value, errGet1 := cache.Get(key1)
+	value, _, errGet1 := cache.Get(key1)
 	if errGet1 != nil {
 		t.Errorf("key1 get error: %v", errGet1)
 	}
@@ -197,7 +219,7 @@ func TestCacheIntError(t *testing.T) {
 
 	key1 := "2"
 
-	value, errGet1 := cache.Get(key1)
+	value, _, errGet1 := cache.Get(key1)
 	if errGet1 != nil {
 		t.Errorf("key1 get error: %v", errGet1)
 	}

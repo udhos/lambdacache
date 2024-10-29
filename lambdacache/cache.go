@@ -20,8 +20,8 @@ type Options struct {
 	// Set to negative value (ie -1) to disable clean-up.
 	CleanupInterval time.Duration
 
-	// Debug enables debug logging.
-	Debug bool
+	// DisableCleanupLog disables clean-up logs.
+	DisableCleanupLog bool
 
 	// Time is a pluggable time source interface for testing.
 	Time TimeSource
@@ -65,33 +65,40 @@ func New(options Options) *Cache {
 }
 
 // Get gets value for key from cache.
-func (c *Cache) Get(key string) (interface{}, error) {
+// value returns the result for the key.
+// cacheHit signals whether the key was found in cache.
+// Any error is reported in err.
+func (c *Cache) Get(key string) (value interface{}, cacheHit bool, err error) {
 
 	begin := c.options.Time.Now()
 
-	if c.options.CleanupInterval > 0 && c.options.Time.Since(c.lastCleanup) > c.options.CleanupInterval {
-		//
-		// clean-up expired keys
-		//
-		size := len(c.cache)
-		for k, e := range c.cache {
-			if !e.isAlive(begin) {
-				delete(c.cache, k)
+	if c.options.CleanupInterval > 0 {
+		lastCleanupAge := c.options.Time.Since(c.lastCleanup)
+		if lastCleanupAge > c.options.CleanupInterval {
+			//
+			// clean-up expired keys
+			//
+			size := len(c.cache)
+			for k, e := range c.cache {
+				if !e.isAlive(begin) {
+					delete(c.cache, k)
+				}
 			}
-		}
 
-		remain := len(c.cache)
-		deleted := size - remain
-		if c.options.Debug {
-			slog.Debug("lambdacache.Cache.Get: cleanup",
-				"elapsed", c.options.Time.Since(begin),
-				"scanned", size,
-				"deleted", deleted,
-				"remain", remain,
-			)
-		}
+			if !c.options.DisableCleanupLog {
+				remain := len(c.cache)
+				deleted := size - remain
+				slog.Info("lambdacache.Cache.Get: cleanup",
+					"cleanup_last_run", lastCleanupAge,
+					"cleanup_elapsed", c.options.Time.Since(begin),
+					"scanned", size,
+					"deleted", deleted,
+					"remain", remain,
+				)
+			}
 
-		c.lastCleanup = begin
+			c.lastCleanup = begin
+		}
 	}
 
 	//
@@ -101,7 +108,9 @@ func (c *Cache) Get(key string) (interface{}, error) {
 	e, found := c.cache[key]
 	if found {
 		if e.isAlive(c.options.Time.Now()) {
-			return e.value, nil
+			value = e.value
+			cacheHit = true
+			return
 		}
 		delete(c.cache, key)
 	}
@@ -111,8 +120,12 @@ func (c *Cache) Get(key string) (interface{}, error) {
 	//
 
 	v, ttl, errRetrieve := c.options.Retrieve(key)
+
+	value = v
+
 	if errRetrieve != nil {
-		return "", errRetrieve
+		err = errRetrieve
+		return
 	}
 
 	//
@@ -126,5 +139,5 @@ func (c *Cache) Get(key string) (interface{}, error) {
 
 	c.cache[key] = e
 
-	return v, nil
+	return
 }

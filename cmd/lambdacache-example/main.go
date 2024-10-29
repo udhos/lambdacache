@@ -14,18 +14,17 @@ import (
 var cache = newCache()
 
 func main() {
-
 	for i := range 10 {
 		id := i % 2
 		key := fmt.Sprintf("key%d", id+1)
 		begin := time.Now()
 
 		// query cache like this in lambda function HANDLER context
-		value, err := cache.Get(key)
+		value, cacheHit, err := cache.Get(key)
 
 		elapsed := time.Since(begin)
-		fmt.Printf("key=%s value=%s elap=%v error=%v\n",
-			key, value, elapsed, err)
+		fmt.Printf("key=%s value=%s elap=%v cached=%t error=%v\n",
+			key, value, elapsed, cacheHit, err)
 	}
 }
 
@@ -37,9 +36,8 @@ func newCache() *lambdacache.Cache {
 	}
 
 	options := lambdacache.Options{
-		Debug:    debug,
 		Retrieve: getInfo,
-		//CleanupInterval: 1, // 1 means always pratically
+		//CleanupInterval: 200 * time.Millisecond,
 	}
 
 	return lambdacache.New(options)
